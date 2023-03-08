@@ -9,3 +9,95 @@ consul agent -server -bootstrap-expect=1 -data-dir =consul-data2 -ui -bind=192.1
   -bind : ipv4 address of the machine where consul server is running
   
   
+ Once the installation is successful , we can check the consul dashboard in : http://localhost:8500/ui
+ 8500 is the default port for consul.
+ 
+ 
+ SPring cloud consul helps in maintaining 
+  1) Distributed Configuration
+  2) Service Discovery
+  3) Health Checking
+  
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Consul provides a Key/Value store for storing the configuration details.
+
+During the bootstrap phase, the configuration data is loaded into the Spring environment.
+
+By default, the Consul server refers to the /config folder for configuration data.
+
+Create a /config folder in the Key/value store of the consul server
+Create a file as an application/data inside the config folder. Ending a key with / means it is a folder, so this creates a folder as an application and it contains a file as data.
+Place the common configuration data among all the microservices in the data file and choose the format as YAML.
+Consul supports the config data in YAML/JSON/HCL format.
+       HCL (Hashicorp Consul configuration Language) is the Consul’s own configuration language with the syntax as key = value.
+
+
+
+Create separate properties file for each microservice with the name of the file matching the spring.application.name of the service inside /config folder.
+Place the respective properties in their respective files.
+Add the Consul dependency in the pom.xml file of all the microservices
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-consul-config</artifactId>
+</dependency>
+
+In the bootstrap.yml file of all microservices, provide the Consul server details.
+server:
+  port: 9400
+  
+spring:
+  application:
+    name: PlanMS
+  cloud:
+    consul:
+      host: localhost
+      config:
+        fail-fast: false
+        enabled: true
+        prefix: config
+        defaultContext: application
+        data-key: data
+        profileSeparator: '::'
+        format: YAML 
+
+enabled: setting this value to "false" disables Consul Config
+prefix: sets the base folder for configuration values
+defaultContext: sets the folder name used by all applications
+profileSeparator:  sets the value of the separator used to separate the profile name in property sources with profiles
+format: format in which the configuration data is stored in consul, YAML/JSON/HCL format.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Spring gets the configuration details from various sources such as the environment variables, properties files, YAML files, etc. These are built in property sources. When we use Cloud Consul, it just adds an additional property source to the Environment such that it takes the properties from the Cloud Consul server.
+
+When we use Cloud Consul, this property source takes a higher priority. That means, any duplicate properties in other property sources are ignored.
+
+The configuration files used in the Consul server must have the same name as that of the client's spring.application.name
+
+We can have multiple profiles as well and if a profile is not mentioned it will load the default profile, which is the same name as that of the spring.application.name.
+
+If we try to access a microservice property for a given profile, the order of files used will be:
+
+config/testApp,dev/
+config/testApp/
+config/application,dev/
+config/application/
+
+Assumption: dev is the profile name and testApp is the spring.application.name.
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+The Consul server will share the config data to the service during the bootstrap time but if there are any changes in the Consul config data, then we want it to be reflected in our microservices.
+
+The consul server will automatically update the service with the config data changes once every 1000ms.
+
+We can use the below property in the config file to customize this.
+
+spring.cloud.consul.config.watch.delay: 100
+Here, for every 100ms, the service will be notified with the updated config data from the Consul.
+  
+  
+  
+  

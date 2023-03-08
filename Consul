@@ -1,0 +1,11 @@
+1) download the consul software from internet
+2) start the consul software as a server using below command:
+
+consul agent -server -bootstrap-expect=1 -data-dir =consul-data2 -ui -bind=192.168.100.13
+
+  -server : consul is acting as a server
+  -bootstrap-expect  : expecting only 1 server instance, No cluster.
+  -data-dir : creates a folder with this name, where the consul data must be stored
+  -bind : ipv4 address of the machine where consul server is running
+  
+  
